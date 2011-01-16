@@ -1,0 +1,14 @@
+#! /bin/sh
+
+tcpdump_p_id=$1
+record_ring_p_id=$2
+measuring_span=$3
+echo sleep $3
+
+sleep $measuring_span
+sudo kill $tcpdump_p_id
+#kill $record_ring_p_id
+killall java
+
+
+

@@ -1,0 +1,28 @@
+#! /bin/sh
+. `dirname $0`/e-para.conf
+
+output_file=$1/ring-info
+#echo outpu_file is $output_file
+host_id=`hostname | sed 's/lime//g'`
+wait_time=`expr $host_id \* 2`
+sleep $wait_time
+while :
+do
+	#TODO:detemin $hostname $port_id
+	#determin hostnode within worker_node(length is fixed)  depending on time 
+	node_number=$(($RANDOM % ${#worker_node_ids[*]} ))
+	c_node_number=$(($RANDOM % $each_node_number + 1))
+	host_name="10.20.${worker_node_ids[$node_number]}.${c_node_number}"
+	#caluculate the number of cassandranodes on one machine and select depending on time.
+	port="$((8080 + c_node_number))"
+	date=`date +%Y%m%d%H%M%S ` 
+	buffer="--- \
+	Src Network: 10.20.$host_id.0, Request Node: $host_name, Request Date: $date : \
+	"
+	ring_info=`${cassandra_run_home}/nodetool -h $host_name -p $port ring`
+	buffer="${buffer} \
+	${ring_info} "
+	echo $buffer >> $output_file
+	sleep 60
+done
+

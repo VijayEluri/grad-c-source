@@ -1,0 +1,65 @@
+#! /bin/sh
+
+####################################
+# This script mesure the tcp packet#
+# related the cassandra node and   #
+# output this data to $raw-data you#
+# can specify.If you want to get   #
+# only packet size info,you must   #
+# anlyzie rawdata.	 	   #
+#				   #	
+####################################
+
+
+#1.make directory for TCPPacket data
+
+echo "@`hostname` [INFO] make data-direcotry........."
+CASSANDRA_PACKET_DATA_HOME="/work2/okudera/cassandra-lite/packet-data"
+. `dirname $0`/e-para.conf
+
+
+#TODO:error check!
+#date=`date +%Y%m%d%H%M%S `
+date=$1
+#measuring_span=1200
+measuring_span=$2
+each_node_number=$3
+record_info_output_dirctory=$4
+
+datadir=$CASSANDRA_PACKET_DATA_HOME/tcpPacket/$date
+datafile=raw-data
+if ! test -e $datadir;then
+	mkdir -p $datadir
+	touch $datadir/$datafile
+else
+	echo $datadir
+	rm cp /dev/null > $datadir/$datafile
+fi
+
+#2.stating mesure
+
+echo "@`hostname` [INFO] start measuring tcpPacket..........."
+
+host_id=`hostname | sed 's/lime//g'`
+sudo tcpdump -n -vvv -i eth0 src net 10.20.0.0/16 and dst net 10.20.$host_id.0/24 \
+and dst port 7001 and ip proto \\tcp \
+>  $datadir/$datafile &
+
+tcpdump_p_id=$!
+echo "start running cassandra-node@each"
+cd $cassandra_run_home
+./cassandra-multi -p pidlist -n $each_node_number
+
+
+echo [`hostname`]all cassandra nodes run.
+
+echo "starting recording ring-info"
+#`dirname $0`/record_ring_info $record_info_output_dirctory  &
+record_ring_info_p_id=$!
+#echo re-pid  $record_ring_info_p_id
+
+echo "run stop-script.this script kill  measuring and cassandra-process after given seconds"
+`dirname $0`/stopMeasureTCPPacket $tcpdump_p_id $record_ring_info_p_id $measuring_span &
+
+
+

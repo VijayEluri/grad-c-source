@@ -1,0 +1,12 @@
+#! /bin/sh
+
+worker_node_ids=(19 20)
+node_number=$(($RANDOM % ${#worker_node_ids[*]} ))
+echo node: lime${worker_node_ids[$node_number]}
+
+each_node_number=50
+c_node_number=$(($RANDOM % $each_node_number + 1))
+
+echo c-node: 10.20.${worker_node_ids[$node_number]}.${c_node_number}
+port=$((8080 + c_node_number))
+echo port: $port

@@ -1,0 +1,13 @@
+#! /bin/sh
+. `dirname $0`/e-para.conf
+
+
+for i in `seq 1 10`
+do
+	sleep 1
+	node_number=`expr $i \* 30`
+	echo "node_number=$node_number; \
+	each_node_number=`expr $node_number / ${#worker_node_ids[*]} ` \
+	" >> `dirname $0`/e-para.conf
+	./measure
+done

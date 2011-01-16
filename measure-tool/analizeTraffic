@@ -1,0 +1,32 @@
+#! /bin/sh
+
+. `dirname $0`/e-para.conf
+date=$1
+#echo $date
+final_output_directory=$2
+#echo $final_output_directory
+
+cat ${cassandra_data_home}/$date/raw-data | grep IP |awk '{print $1,$17}' | sed "s/)//" | sed -e "s/\.[0-9]\+//" | sed 's/:/ /g' | awk '{print $1*3600 + $2*60 + $3,$4}'  > ${cassandra_data_home}/$date/raw-data2
+
+default_classpath=`echo $CLASSPATH`
+CLASSPATH=${measure_tool_directory}
+export CLASSPATH
+#echo $CLASSPATH
+#cmde="java  analyze.AggregateData ${cassandra_data_home}/$date/raw-data2 \> ${cassandra_data_home}/$date/result_by_10"
+cmde="java analyze.AggregateData $delimeter  ${cassandra_data_home}/$date/raw-data2  ${cassandra_data_home}/$date/result_by_10"
+#echo $cmde
+$cmde
+ #exec $cmde
+
+#echo aaaa
+CLASSPATH=$default_classpath
+export CLASSPATH
+#echo $CLASSPATH
+
+host_id=`hostname | sed 's/lime//g'`
+cp ${cassandra_data_home}/$date/result_by_10 ${cassandra_data_home}/$date/result_by_10_${host_id}
+mv ${cassandra_data_home}/$date/result_by_10_${host_id} ${final_output_directory}/$date/
+#echo xxx
+
+: << '#_comment_out'
+#_comment_out

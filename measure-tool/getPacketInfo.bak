@@ -1,0 +1,20 @@
+#!/bin/sh
+
+echo "starting the measurement of the number of the received and transmitted packet"
+start_interface_info=`cat /proc/net/dev | grep eth0 |awk '{print $2}'`
+#echo $cmd_interface_info
+#initialize log file
+log_file="/home/okudera/work/cassandra-lite/measure-tool/packet_log/.recive.log"
+
+cp /dev/null ${log_file}
+
+
+while true
+do
+	current_interface_info=`cat /proc/net/dev | grep eth0 |awk '{print $2}'`
+	packet_size=`expr ${current_interface_info} - ${start_interface_info}`
+	#echo $packet_size | tee -a ${log_file}
+	echo $packet_size >> ${log_file} 2>&1 
+	sleep 1
+done
+

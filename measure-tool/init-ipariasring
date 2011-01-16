@@ -1,0 +1,9 @@
+#!/bin/sh
+
+number="$1"
+host_id=`hostname | sed 's/lime//g'`
+for i in `seq $number`
+do
+	sudo ifconfig eth0:${i} 10.20.${host_id}.${i} netmask 255.255.0.0 broadcast 10.20.255.255
+done
+

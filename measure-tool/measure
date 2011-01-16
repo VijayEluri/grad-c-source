@@ -1,0 +1,74 @@
+#! /bin/sh
+
+#This Program prompt each cluster-node ,whihc is worker node, to measure received Packt and stop him to do so.
+
+
+#============== 0.Set CONF PARMETER  ========================
+if [ "x$E_PARA" = "x" ]; then
+    # Locations (in order) to use when searching for an include file.
+    for include in `dirname $0`/e-para.conf; do
+        if [ -r $include ]; then
+            . $include
+            break
+        fi
+    done
+# ...otherwise, source the specified include.
+elif [ -r $E_PARA_INCLUDE ]; then
+    . $E_PARA_INCLUDE
+fi
+#for debugging
+#. e-para.conf
+#each_node_number=`expr $node_number / ${#worker_node_ids[*]} `
+
+#echo node${node_number}
+
+date=`date +%Y%m%d%H%M%S `
+
+#mkdir to retain final result
+final_result_data_directory="${cassandra_final_result_home}/node${node_number}"
+if [ ! -e $final_result_data_directory ];then
+	mkdir $final_result_data_directory
+fi
+mkdir $final_result_data_directory/$date
+
+# leave meta-info like node,seed
+echo "nodes=${node_number},\
+span=${measuring_span}\
+worker_ids=${worker_node_ids[@]}
+" >$final_result_data_directory/$date/meta-info
+
+cat /home/okudera/work/cassandra-lite/measure-tool/dynamic_seeds_conf >> $final_result_data_directory/$date/meta-info
+#leave worker id in meta-info
+echo  ${worker_node_ids[@]} > $final_result_data_directory/$date/worker_node_ids
+
+#for debugging
+#echo "each_node_number $each_node_number"
+
+#============ 1. Using GXPC,measuring traffic @each worker node ==================
+admin_node_name=`hostname`
+gxpc use ssh $admin_node_name $cluster_name
+for i in ${worker_node_ids[@]}
+do
+	gxpc explore $cluster_name[[$i]]
+done	
+
+#eliminate admin_node,because this node is not worker node.
+#gxpc e -H $admin_node_name
+#gxpc smask
+
+
+#============ 2.Start Measure Traffic  =====================================================
+gxpc e ${measure_tool_directory}/measureTCPPacket  $date $measuring_span $each_node_number $final_result_data_directory/$date
+
+
+
+#=========== 3.Analyze Traffic date =======================================================
+gxpc e ${measure_tool_directory}/analizeTraffic $date $final_result_data_directory
+R --vanilla --slave --args $final_result_data_directory/$date < ${measure_tool_directory}/R/reduceData.R
+
+R --vanilla --slave --args $final_result_data_directory/$date < ${measure_tool_directory}/R/calculateWholeThroughput.R
+
+#=========== 4.Aggregate and Reduce Traffic Date ==========================================
+#put result_by_10(change name!) @ nfc and analyze these data into final data
+gxpc quit
+
